@@ -140,11 +140,13 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 		return false;
 	}
 
+	bool loaded = false;
 	if (filepath == "Meshes/collision.obj")
 	{
-		m_mesh->loadBinary(filepath);
+		loaded = m_mesh->loadBinary(filepath);
 	}
-	else
+	
+	if ( !loaded )
 	{
 		if (!m_mesh->load(filepath, true))
 		{
