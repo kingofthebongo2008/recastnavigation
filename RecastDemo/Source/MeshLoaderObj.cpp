@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <math.h>
+#include <vector>
 
 rcMeshLoaderObj::rcMeshLoaderObj() :
 	m_scale(1.0f),
@@ -34,44 +35,21 @@ rcMeshLoaderObj::rcMeshLoaderObj() :
 
 rcMeshLoaderObj::~rcMeshLoaderObj()
 {
-	delete [] m_verts;
-	delete [] m_normals;
-	delete [] m_tris;
 }
 		
 void rcMeshLoaderObj::addVertex(float x, float y, float z, int& cap)
 {
-	if (m_vertCount+1 > cap)
-	{
-		cap = !cap ? 8 : cap*2;
-		float* nv = new float[cap*3];
-		if (m_vertCount)
-			memcpy(nv, m_verts, m_vertCount*3*sizeof(float));
-		delete [] m_verts;
-		m_verts = nv;
-	}
-	float* dst = &m_verts[m_vertCount*3];
-	*dst++ = x*m_scale;
-	*dst++ = y*m_scale;
-	*dst++ = z*m_scale;
+	m_verts.push_back(x);
+	m_verts.push_back(y);
+	m_verts.push_back(z);
 	m_vertCount++;
 }
 
 void rcMeshLoaderObj::addTriangle(int a, int b, int c, int& cap)
 {
-	if (m_triCount+1 > cap)
-	{
-		cap = !cap ? 8 : cap*2;
-		int* nv = new int[cap*3];
-		if (m_triCount)
-			memcpy(nv, m_tris, m_triCount*3*sizeof(int));
-		delete [] m_tris;
-		m_tris = nv;
-	}
-	int* dst = &m_tris[m_triCount*3];
-	*dst++ = a;
-	*dst++ = b;
-	*dst++ = c;
+	m_tris.push_back(a);
+	m_tris.push_back(b);
+	m_tris.push_back(c);
 	m_triCount++;
 }
 
@@ -135,7 +113,7 @@ static int parseFace(char* row, int* data, int n, int vcnt)
 	return j;
 }
 
-bool rcMeshLoaderObj::load(const std::string& filename)
+bool rcMeshLoaderObj::load(const std::string& filename, bool saveAsBinary)
 {
 	char* buf = 0;
 	FILE* fp = fopen(filename.c_str(), "rb");
@@ -213,7 +191,7 @@ bool rcMeshLoaderObj::load(const std::string& filename)
 	delete [] buf;
 
 	// Calculate normals.
-	m_normals = new float[m_triCount*3];
+	m_normals.resize(m_triCount * 3);
 	for (int i = 0; i < m_triCount*3; i += 3)
 	{
 		const float* v0 = &m_verts[m_tris[i]*3];
@@ -240,5 +218,210 @@ bool rcMeshLoaderObj::load(const std::string& filename)
 	}
 	
 	m_filename = filename;
+
+	if (saveAsBinary)
+	{
+		const std::string vertices = filename + ".vertices";
+		const std::string indices  = filename + ".indices";
+		const std::string normals  = filename + ".normals";	
+
+		FILE* fpV = fopen(vertices.c_str(), "wb");
+		{
+			if (!fpV)
+				return false;
+
+			fwrite(&m_vertCount, sizeof(int), 1, fpV);	
+			fwrite(&m_verts[0], sizeof(float) * 3, m_vertCount, fpV);
+			fclose(fpV);	
+		}
+
+		FILE* fpI = fopen(indices.c_str(), "wb");
+		{
+			if (!fpI)
+				return false;
+
+			fwrite(&m_triCount, sizeof(int), 1, fpI);
+			fwrite(&m_tris[0], sizeof(int) * 3, m_triCount, fpI);
+			fclose(fpI);
+		}
+		
+		FILE* fpN = fopen(normals.c_str(), "wb");
+		{
+			if (!fpN)
+				return false;
+
+			int normalCount = m_triCount * 3;
+
+			fwrite(&normalCount, sizeof(int), 1, fpN);
+			fwrite(&m_normals[0], sizeof(float), normalCount, fpN);
+			fclose(fpN);
+		}
+
+		//compare
+		if ( true )
+		{
+			{
+				FILE* fpV = fopen(vertices.c_str(), "rb");
+				{
+					std::vector<float> ve;
+
+					if (!fpV)
+						return false;
+
+					int vertCount = 0;
+					fread(&vertCount, sizeof(int), 1, fpV);
+
+					ve.resize(vertCount * 3);
+
+					fread(&ve[0], sizeof(float) * 3, vertCount, fpV);
+					fclose(fpV);
+
+					if (m_verts.size() != ve.size())
+					{
+						__debugbreak();
+					}
+
+					int cmp = std::memcmp(&ve[0], &m_verts[0], vertCount * sizeof(float) * 3);
+
+					if (cmp != 0)
+					{
+						__debugbreak();
+					}
+				}
+			}
+
+			{
+				FILE* fpI = fopen(indices.c_str(), "rb");
+				{
+					std::vector<int> ind;
+
+					if (!fpI)
+						return false;
+
+					int triCount = 0;
+					fread(&triCount, sizeof(int), 1, fpI);
+
+					ind.resize(triCount * 3);
+
+					fread(&ind[0], sizeof(int) * 3, triCount, fpI);
+					fclose(fpI);
+
+					if (ind.size() != m_tris.size())
+					{
+						__debugbreak();
+					}
+
+					int cmp = std::memcmp(&ind[0], &m_tris[0], triCount * sizeof(int) * 3);
+
+					if (cmp != 0)
+					{
+						__debugbreak();
+					}
+				}
+			}
+
+			{
+				FILE* fpN = fopen(normals.c_str(), "rb");
+				{
+					std::vector<float> no;
+
+					if (!fpN)
+						return false;
+
+					int normalCount = 0;
+					fread(&normalCount, sizeof(int), 1, fpN);
+
+					no.resize(normalCount);
+
+					fread(&no[0], sizeof(float), normalCount, fpN);
+					fclose(fpN);
+
+					if (no.size() != m_normals.size())
+					{
+						__debugbreak();
+					}
+
+					int cmp = std::memcmp(&no[0], &m_normals[0], normalCount * sizeof(float));
+
+					if (cmp != 0)
+					{
+						__debugbreak();
+					}
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool rcMeshLoaderObj::loadBinary(const std::string& fileName)
+{
+	const std::string vertices = fileName + ".vertices";
+	const std::string indices = fileName + ".indices";
+	const std::string normals = fileName + ".normals";
+
+	{
+		FILE* fpV = fopen(vertices.c_str(), "rb");
+		{
+			std::vector<float> ve;
+
+			if (!fpV)
+				return false;
+
+			int vertCount = 0;
+			fread(&vertCount, sizeof(int), 1, fpV);
+
+			ve.resize(vertCount * 3);
+
+			fread(&ve[0], sizeof(float) * 3, vertCount, fpV);
+			fclose(fpV);
+
+			m_vertCount = vertCount;
+			m_verts     = std::move(ve);
+		}
+	}
+
+	{
+		FILE* fpI = fopen(indices.c_str(), "rb");
+		{
+			std::vector<int> ind;
+
+			if (!fpI)
+				return false;
+
+			int triCount = 0;
+			fread(&triCount, sizeof(int), 1, fpI);
+
+			ind.resize(triCount * 3);
+
+			fread(&ind[0], sizeof(int) * 3, triCount, fpI);
+			fclose(fpI);
+
+			m_triCount = triCount;
+			m_tris = std::move(ind);
+		}
+	}
+
+	{
+		FILE* fpN = fopen(normals.c_str(), "rb");
+		{
+			std::vector<float> no;
+
+			if (!fpN)
+				return false;
+
+			int normalCount = 0;
+			fread(&normalCount, sizeof(int), 1, fpN);
+
+			no.resize(normalCount);
+
+			fread(&no[0], sizeof(float), normalCount, fpN);
+			fclose(fpN);
+
+			m_normals = std::move(no);
+		}
+	}
+
 	return true;
 }
