@@ -416,7 +416,7 @@ bool rcMeshLoaderObj::loadBinary(const std::string& fileName)
 
 			no.resize(normalCount);
 
-			fread(&no[0], sizeof(float), normalCount, fpN);
+			fread(&no[0], sizeof(normalCount), normalCount, fpN);
 			fclose(fpN);
 
 			m_normals = std::move(no);
