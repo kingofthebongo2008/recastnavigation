@@ -93,6 +93,12 @@ void Sample_SoloMesh::handleSettings()
 
 	if (imguiButton("Save"))
 	{
+		if(m_geom)
+		{
+			const std::string name = m_geom->getGeometryName() + ".bin";
+			Sample::saveAll(name.c_str(), m_navMesh);
+		}
+
 		Sample::saveAll("solo_navmesh.bin", m_navMesh);
 	}
 

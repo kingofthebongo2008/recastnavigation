@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <filesystem>
 #include <algorithm>
 #include "Recast.h"
 #include "InputGeom.h"
@@ -140,14 +141,14 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 		return false;
 	}
 
-	bool loaded = false;
-	if (filepath == "Meshes/collision.obj")
-	{
-		loaded = m_mesh->loadBinary(filepath);
-	}
-	
+	std::filesystem::path path(filepath);
+	std::string filename = path.filename().stem().string();
+	bool loaded = loaded = m_mesh->loadBinary(filepath);
+
+	m_geometryName = filename;
+		
 	if ( !loaded )
-	{
+	{	
 		if (!m_mesh->load(filepath, true))
 		{
 			ctx->log(RC_LOG_ERROR, "buildTiledNavigation: Could not load '%s'", filepath.c_str());

@@ -76,6 +76,7 @@ class InputGeom
 	float m_meshBMin[3], m_meshBMax[3];
 	BuildSettings m_buildSettings;
 	bool m_hasBuildSettings;
+	std::string m_geometryName;
 	
 	/// @name Off-Mesh connections.
 	///@{
@@ -102,7 +103,7 @@ public:
 	InputGeom();
 	~InputGeom();
 	
-	
+	const std::string&	getGeometryName() const { return m_geometryName; }		
 	bool load(class rcContext* ctx, const std::string& filepath);
 	bool saveGeomSet(const BuildSettings* settings);
 	
