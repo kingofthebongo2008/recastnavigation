@@ -2,6 +2,11 @@ file(GLOB SOURCES Source/*.cpp Contrib/fastlz/fastlz.c)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+set(SDL2_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/SDL")
+set(SDL2_RUNTIME_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/SDL/bin/x64/SDL3.dll")
+set(SDL2_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/SDL/lib/x64/SDL3.lib")
+set(CMAKE_CXX_STANDARD 17)
+
 if(NOT SDL2_ROOT_DIR)
   if(WIN32)
     set(SDL2_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/SDL")
@@ -17,7 +22,9 @@ if(APPLE)
     PATHS ${SDL2_ROOT_DIR}
     REQUIRED)
 else()
-  find_package(SDL2 REQUIRED)
+    if(NOT SDL2_ROOT_DIR)
+      find_package(SDL2 REQUIRED)
+    endif()
 endif()
 
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
@@ -30,6 +37,7 @@ include_directories(../DetourTileCache/Include)
 include_directories(../Recast/Include)
 include_directories(Include)
 include_directories(Contrib/SDL/include)
+include_directories(Contrib/SDL/include/SDL3)
 if(APPLE)
   include_directories(${SDL2_LIBRARY}/Headers)
 endif()
@@ -71,7 +79,7 @@ add_dependencies(RecastDemo DebugUtils Detour DetourCrowd DetourTileCache Recast
 if(APPLE)
   target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} ${SDL2_LIBRARY} DebugUtils Detour DetourCrowd DetourTileCache Recast)
 else()
-  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} SDL2::SDL2main DebugUtils Detour DetourCrowd DetourTileCache Recast)
+  target_link_libraries(RecastDemo ${OPENGL_LIBRARIES} ${SDL2_LIBRARY} DebugUtils Detour DetourCrowd DetourTileCache Recast)
 endif()
 
 
