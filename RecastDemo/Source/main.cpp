@@ -71,15 +71,16 @@ static const int g_nsamples = sizeof(g_samples) / sizeof(SampleItem);
 
 int main(int /*argc*/, char** /*argv*/)
 {
-	// Init SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	// Use OpenGL render driver.
+	SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+	SDL_SetHint(SDL_HINT_WINDOWS_GAMEINPUT, "false");
+
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 	{
 		printf("Could not initialise SDL.\nError: %s\n", SDL_GetError());
 		return -1;
 	}
 
-    // Use OpenGL render driver.
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 
 	// Enable depth buffer.
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -117,9 +118,9 @@ int main(int /*argc*/, char** /*argv*/)
 	
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	int errorCode = SDL_CreateWindowAndRenderer(width, height, flags, &window, &renderer);
+	bool errorCode = SDL_CreateWindowAndRenderer("RecastDemo", width, height, flags, &window, &renderer);
 
-	if (errorCode != 0 || !window || !renderer)
+	if (!errorCode || !window || !renderer)
 	{
 		printf("Could not initialise SDL opengl\nError: %s\n", SDL_GetError());
 		return -1;
@@ -208,32 +209,32 @@ int main(int /*argc*/, char** /*argv*/)
 			{
 				case SDL_EVENT_KEY_DOWN:
 					// Handle any key presses here.
-					if (event.key.keysym.sym == SDLK_ESCAPE)
+					if (event.key.key== SDLK_ESCAPE)
 					{
 						done = true;
 					}
-					else if (event.key.keysym.sym == SDLK_t)
+					else if (event.key.key == SDLK_T)
 					{
 						showLevels = false;
 						showSample = false;
 						showTestCases = true;
 						scanDirectory(testCasesFolder, ".txt", files);
 					}
-					else if (event.key.keysym.sym == SDLK_TAB)
+					else if (event.key.key == SDLK_TAB)
 					{
 						showMenu = !showMenu;
 					}
-					else if (event.key.keysym.sym == SDLK_SPACE)
+					else if (event.key.key == SDLK_SPACE)
 					{
 						if (sample)
 							sample->handleToggle();
 					}
-					else if (event.key.keysym.sym == SDLK_1)
+					else if (event.key.key == SDLK_1)
 					{
 						if (sample)
 							sample->handleStep();
 					}
-					else if (event.key.keysym.sym == SDLK_9)
+					else if (event.key.key == SDLK_9)
 					{
 						if (sample && geom)
 						{
@@ -453,7 +454,7 @@ int main(int /*argc*/, char** /*argv*/)
 		rayEnd[2] = (float)z;
 		
 		// Handle keyboard movement.
-		const Uint8* keystate = SDL_GetKeyboardState(NULL);
+		const bool* keystate = SDL_GetKeyboardState(NULL);
 		moveFront	= rcClamp(moveFront	+ dt * 4 * ((keystate[SDL_SCANCODE_W] || keystate[SDL_SCANCODE_UP		]) ? 1 : -1), 0.0f, 1.0f);
 		moveLeft	= rcClamp(moveLeft	+ dt * 4 * ((keystate[SDL_SCANCODE_A] || keystate[SDL_SCANCODE_LEFT		]) ? 1 : -1), 0.0f, 1.0f);
 		moveBack	= rcClamp(moveBack	+ dt * 4 * ((keystate[SDL_SCANCODE_S] || keystate[SDL_SCANCODE_DOWN		]) ? 1 : -1), 0.0f, 1.0f);
